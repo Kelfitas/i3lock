@@ -28,7 +28,7 @@ i3lock \- improved screen locker
 .RB [\|\-u\|]
 .RB [\|\-e\|]
 .RB [\|\-f\|]
-.RB [\|\-l\|]
+.RB [\|\-m\|]
 
 .SH DESCRIPTION
 .B i3lock
@@ -107,8 +107,9 @@ your computer with the enter key.
 Show the number of failed attempts, if any.
 
 .TP
-.B \-l, \-\-lock-console
-Lock the console to disable TTY switching (Linux only).
+.B \-m, \-\-pass-media-keys
+Allow the following keys to be used while the screen is locked by passing them through:
+XF86AudioPlay, XF86AudioPause, XF86AudioStop, XF86AudioPrev, XF86AudioNext, XF86AudioMute, XF86AudioLowerVolume, XF86AudioRaiseVolume.
 
 .TP
 .B \-\-debug

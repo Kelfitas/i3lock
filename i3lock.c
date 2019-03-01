@@ -17,6 +17,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <xcb/xcb.h>
+#include <xcb/xproto.h>
 #include <xcb/xkb.h>
 #include <err.h>
 #include <errno.h>
@@ -101,6 +102,7 @@ cairo_surface_t *img = NULL;
 bool tile = false;
 bool ignore_empty_password = false;
 bool skip_repeated_empty_password = false;
+bool pass_media_keys = false;
 
 /* isutf, u8_dec © 2005 Jeff Bezanson, public domain */
 #define isutf(c) (((c)&0xC0) != 0x80)
@@ -425,6 +427,21 @@ static void handle_key_press(xcb_key_press_event_t *event) {
 
     if (!composed) {
         n = xkb_keysym_to_utf8(ksym, buffer, sizeof(buffer));
+    }
+
+    if (pass_media_keys) {
+        switch (ksym) {
+            case XKB_KEY_XF86AudioPlay:
+            case XKB_KEY_XF86AudioPause:
+            case XKB_KEY_XF86AudioStop:
+            case XKB_KEY_XF86AudioPrev:
+            case XKB_KEY_XF86AudioNext:
+            case XKB_KEY_XF86AudioMute:
+            case XKB_KEY_XF86AudioLowerVolume:
+            case XKB_KEY_XF86AudioRaiseVolume:
+                xcb_send_event(conn, true, screen->root, XCB_EVENT_MASK_BUTTON_PRESS, (char *)event);
+                return;
+        }
     }
 
     switch (ksym) {
@@ -894,6 +911,7 @@ int main(int argc, char *argv[]) {
         {"ignore-empty-password", no_argument, NULL, 'e'},
         {"inactivity-timeout", required_argument, NULL, 'I'},
         {"show-failed-attempts", no_argument, NULL, 'f'},
+        {"pass-media-keys", no_argument, NULL, 'm'},
         {"lock-console", no_argument, NULL, 'l'},
         {NULL, no_argument, NULL, 0}};
 
@@ -902,7 +920,7 @@ int main(int argc, char *argv[]) {
     if ((username = pw->pw_name) == NULL)
         errx(EXIT_FAILURE, "pw->pw_name is NULL.");
 
-    char *optstring = "hvnbdc:p:ui:teI:fl";
+    char *optstring = "hvnbdc:p:ui:teI:flm";
     while ((o = getopt_long(argc, argv, optstring, longopts, &longoptind)) != -1) {
         switch (o) {
             case 'v':
@@ -967,9 +985,12 @@ int main(int argc, char *argv[]) {
                 errx(EXIT_FAILURE, "TTY switch locking is only supported on Linux.");
 #endif
                 break;
+            case 'm':
+                pass_media_keys = true;
+                break;
             default:
                 errx(EXIT_FAILURE, "Syntax: i3lock [-v] [-n] [-b] [-d] [-c color] [-u] [-p win|default]"
-                                   " [-i image.png] [-t] [-e] [-I timeout] [-f] [-l]");
+                                   " [-i image.png] [-t] [-e] [-I timeout] [-f] [-l] [-m]");
         }
     }
 
